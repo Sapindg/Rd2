@@ -1,0 +1,218 @@
+<!DOCTYPE html><html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Russian Death 2</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: 'Creepster', cursive;
+      background-color: black;
+      color: white;
+      text-align: center;
+    }
+    .hidden { display: none; }
+    .title-screen, .how-to-play, .turn-text, .buttons, .hud { padding: 20px; }
+    .epic { font-size: 40px; animation: fadeInOut 3s forwards; }
+    .buttons button, .hud button {
+      margin: 10px;
+      padding: 15px 25px;
+      font-size: 20px;
+      background: darkred;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    @keyframes fadeInOut {
+      0% { opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    .dark-bg {
+      background: url('https://cdn.pixabay.com/photo/2020/05/04/11/36/horror-5123149_1280.jpg') no-repeat center center;
+      background-size: cover;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div class="title-screen">
+    <h1>Russian Death 2</h1>
+    <h3>O Jogo da Morte - Parte Dois</h3>
+    <button onclick="startGame()">JOGAR</button>
+    <button onclick="toggleHowToPlay(true)">COMO JOGAR</button>
+  </div>  <div class="how-to-play hidden">
+    <p>Agora é sério. O jogo evoluiu:<br><br>
+    - Você tem 3 balas em um tambor de 6 tiros. Cada tiro consome uma bala.<br>
+    - Você pode recarregar se tiver sem bala.<br>
+    - O oponente também tem munição limitada.<br>
+    - Se tentar atirar sem bala... só vergonha.<br><br>
+    Seu objetivo continua sendo sobreviver até que o oponente morra. Use a sorte. Ou a astúcia.</p>
+    <button onclick="toggleHowToPlay(false)">FECHAR</button>
+  </div>  <div class="game hidden dark-bg">
+    <div class="turn-text" id="turnText"></div>
+    <div class="buttons hidden" id="actionButtons">
+      <button onclick="playerAction('opponent')">Atirar no oponente</button>
+      <button onclick="playerAction('self')">Atirar em você mesmo</button>
+      <button onclick="reloadGun()">Recarregar</button>
+    </div>
+  </div><audio id="gunshot" src="https://www.myinstants.com/media/sounds/gunshot.mp3" preload="auto"></audio> <audio id="empty" src="https://www.myinstants.com/media/sounds/gun-empty.mp3" preload="auto"></audio> <audio id="reload" src="https://www.myinstants.com/media/sounds/reload.mp3" preload="auto"></audio>
+
+  <script>
+    let playerHP = 3;
+    let opponentHP = 3;
+    let playerAmmo = 3;
+    let opponentAmmo = 3;
+    let playerTurn = true;
+
+    function startGame() {
+      document.querySelector('.title-screen').classList.add('hidden');
+      document.querySelector('.game').classList.remove('hidden');
+      showTurn("SEU TURNO");
+      setTimeout(() => {
+        document.getElementById('actionButtons').classList.remove('hidden');
+      }, 3000);
+    }
+
+    function toggleHowToPlay(show) {
+      document.querySelector('.how-to-play').classList.toggle('hidden', !show);
+    }
+
+    function showTurn(text) {
+      const turnText = document.getElementById('turnText');
+      turnText.innerHTML = `<div class='epic'>${text}</div>`;
+    }
+
+    function randomChance() {
+      return Math.random() < 0.5;
+    }
+
+    function reloadGun() {
+      if (playerAmmo < 6) {
+        document.getElementById('reload').play();
+        playerAmmo = 3;
+        alert("Você recarregou sua arma.");
+        switchTurn();
+      } else {
+        alert("Sua arma já está cheia!");
+      }
+    }
+
+    function playerAction(target) {
+      if (playerAmmo <= 0) {
+        document.getElementById('empty').play();
+        alert("Você tentou atirar... mas não tinha balas!");
+        switchTurn();
+        return;
+      }
+
+      playerAmmo--;
+      document.getElementById('actionButtons').classList.add('hidden');
+      document.body.style.backgroundColor = 'black';
+      setTimeout(() => {
+        const hit = randomChance();
+        if (hit) document.getElementById('gunshot').play();
+
+        if (target === 'opponent') {
+          if (hit) {
+            opponentHP--;
+            alert("VOCÊ TIROU 1 VIDA DO OPONENTE.");
+            switchTurn();
+          } else {
+            alert("O OPONENTE NÃO SOFREU DANOS.");
+            switchTurn();
+          }
+        } else {
+          if (hit) {
+            playerHP--;
+            alert("VOCÊ SE ATIROU E TOMOU DANO!");
+            checkGameOver();
+            showTurn("SEU TURNO");
+            setTimeout(() => {
+              document.getElementById('actionButtons').classList.remove('hidden');
+            }, 3000);
+          } else {
+            alert("VOCÊ SE ATIROU, MAS SAIU ILESO.");
+            showTurn("SEU TURNO");
+            setTimeout(() => {
+              document.getElementById('actionButtons').classList.remove('hidden');
+            }, 3000);
+          }
+        }
+      }, 2000);
+    }
+
+    function switchTurn() {
+      checkGameOver();
+      showTurn("TURNO DO OPONENTE");
+      setTimeout(() => {
+        opponentAction();
+      }, 3000);
+    }
+
+    function opponentAction() {
+      const options = opponentAmmo > 0 ? ["player", "self"] : ["reload"];
+      const choice = options[Math.floor(Math.random() * options.length)];
+
+      setTimeout(() => {
+        if (choice === "reload") {
+          document.getElementById('reload').play();
+          opponentAmmo = 3;
+          alert("O OPONENTE RECARREGOU A ARMA.");
+          showTurn("SEU TURNO");
+          setTimeout(() => {
+            document.getElementById('actionButtons').classList.remove('hidden');
+          }, 3000);
+          return;
+        }
+
+        opponentAmmo--;
+        const hit = randomChance();
+        if (hit) document.getElementById('gunshot').play();
+        else document.getElementById('empty').play();
+
+        if (choice === 'player') {
+          if (hit) {
+            playerHP--;
+            alert("O OPONENTE TE ACERTOU. VOCÊ SOFREU UM DANO.");
+          } else {
+            alert("O OPONENTE ATIROU EM VOCÊ, MAS ERROU.");
+          }
+        } else {
+          if (hit) {
+            opponentHP--;
+            alert("O OPONENTE SE ATIROU E SE FERROU!");
+          } else {
+            alert("O OPONENTE SE ATIROU, MAS NADA ACONTECEU.");
+          }
+        }
+
+        checkGameOver();
+
+        if (choice === 'self' && !hit) {
+          showTurn("TURNO DO OPONENTE");
+          setTimeout(() => opponentAction(), 3000);
+        } else {
+          showTurn("SEU TURNO");
+          setTimeout(() => {
+            document.getElementById('actionButtons').classList.remove('hidden');
+          }, 3000);
+        }
+      }, 2000);
+    }
+
+    function checkGameOver() {
+      if (playerHP <= 0) {
+        alert("VOCÊ MORREU. FIM DE JOGO.");
+        location.reload();
+      }
+      if (opponentHP <= 0) {
+        alert("O OPONENTE MORREU. VOCÊ VENCEU!");
+        location.reload();
+      }
+    }
+  </script></body>
+</html>
